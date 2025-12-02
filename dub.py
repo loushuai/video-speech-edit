@@ -6,6 +6,7 @@ import copy
 import numpy as np
 from transformers import WhisperModel
 from tqdm import tqdm
+from utils import interp_array1d
 
 # os.environ["PYTHONPATH"] = os.pathsep.join([
 #     ".",
@@ -113,16 +114,25 @@ def inference(video_path, audio_path, output_path, tmp_dir="tmp", device='cuda')
         crop_frame = frame[y1:y2, x1:x2]
         crop_frame = cv2.resize(crop_frame, (256,256), interpolation=cv2.INTER_LANCZOS4)
         latents = vae.get_latents_for_unet(crop_frame)
-        input_latent_list.append(latents)
+        input_latent_list.append(latents.cpu())
 
     # Smooth first and last frames
-    frame_list_cycle = frame_list + frame_list[::-1]
-    coord_list_cycle = coord_list + coord_list[::-1]
-    input_latent_list_cycle = input_latent_list + input_latent_list[::-1]
+    # frame_list_cycle = frame_list + frame_list[::-1]
+    # coord_list_cycle = coord_list + coord_list[::-1]
+    # input_latent_list_cycle = input_latent_list + input_latent_list[::-1]
+    
+    video_num = len(whisper_chunks)
+    if video_num <= len(frame_list):
+        frame_list_cycle = frame_list
+        coord_list_cycle = coord_list
+        input_latent_list_cycle = input_latent_list
+    else:
+        frame_list_cycle = interp_array1d(np.array(frame_list), video_num)
+        coord_list_cycle = interp_array1d(np.array(coord_list), video_num)
+        input_latent_list_cycle = interp_array1d(np.array(input_latent_list, dtype=object), video_num)
 
     # Batch inference
     print("Starting inference")
-    video_num = len(whisper_chunks)
     batch_size = 8
     gen = datagen(
         whisper_chunks=whisper_chunks,
@@ -137,6 +147,8 @@ def inference(video_path, audio_path, output_path, tmp_dir="tmp", device='cuda')
 
     # Execute inference
     for i, (whisper_batch, latent_batch) in enumerate(tqdm(gen, total=total)):
+        whisper_batch = whisper_batch.to(device=device, dtype=weight_dtype)
+        latent_batch = latent_batch.to(device=device, dtype=weight_dtype)
         audio_feature_batch = pe(whisper_batch)
         latent_batch = latent_batch.to(dtype=unet.model.dtype)
 
