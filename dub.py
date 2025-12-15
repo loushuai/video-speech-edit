@@ -185,11 +185,6 @@ def inference(video_path, audio_path, output_path, tmp_dir="tmp", device='cuda')
 # test
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dub a video with new audio using MuseTalk.")
-    
-    # video_path = "../data/video/gdg_clip_no_audio.mp4"
-    # audio_path = "../data/audio/gdg.wav"
-    # output_path = "../results/output_dubbed_video.mp4"
-    # inference(video_path, audio_path, output_path, tmp_dir="../tmp", device='cuda')
     parser.add_argument("--video_path", type=str, required=True, help="Path to the input video file")
     parser.add_argument("--audio_path", type=str, required=True, help="Path to the input audio file")
     parser.add_argument("--output_path", type=str, required=True, help="Path to save the output dubbed video")
