@@ -3,15 +3,12 @@ import cv2
 import torch
 import glob
 import copy
+import argparse
 import numpy as np
 from transformers import WhisperModel
 from tqdm import tqdm
 from utils import interp_array1d
 
-# os.environ["PYTHONPATH"] = os.pathsep.join([
-#     ".",
-#     "MuseTalk",
-# ])
 
 initial_cwd = os.getcwd()
 new_directory_path = "MuseTalk"
@@ -116,11 +113,6 @@ def inference(video_path, audio_path, output_path, tmp_dir="tmp", device='cuda')
         latents = vae.get_latents_for_unet(crop_frame)
         input_latent_list.append(latents.cpu())
 
-    # Smooth first and last frames
-    # frame_list_cycle = frame_list + frame_list[::-1]
-    # coord_list_cycle = coord_list + coord_list[::-1]
-    # input_latent_list_cycle = input_latent_list + input_latent_list[::-1]
-    
     video_num = len(whisper_chunks)
     if video_num <= len(frame_list):
         frame_list_cycle = frame_list
@@ -189,9 +181,18 @@ def inference(video_path, audio_path, output_path, tmp_dir="tmp", device='cuda')
     print("Audio combination command:", cmd_combine_audio) 
     os.system(cmd_combine_audio)
 
+
 # test
 if __name__ == "__main__":
-    video_path = "../data/video/gdg_clip_no_audio.mp4"
-    audio_path = "../data/audio/gdg.wav"
-    output_path = "../results/output_dubbed_video.mp4"
-    inference(video_path, audio_path, output_path, tmp_dir="../tmp", device='cuda')
+    parser = argparse.ArgumentParser(description="Dub a video with new audio using MuseTalk.")
+    
+    # video_path = "../data/video/gdg_clip_no_audio.mp4"
+    # audio_path = "../data/audio/gdg.wav"
+    # output_path = "../results/output_dubbed_video.mp4"
+    # inference(video_path, audio_path, output_path, tmp_dir="../tmp", device='cuda')
+    parser.add_argument("--video_path", type=str, required=True, help="Path to the input video file")
+    parser.add_argument("--audio_path", type=str, required=True, help="Path to the input audio file")
+    parser.add_argument("--output_path", type=str, required=True, help="Path to save the output dubbed video")
+    args = parser.parse_args()
+    
+    inference(args.video_path, args.audio_path, args.output_path)
